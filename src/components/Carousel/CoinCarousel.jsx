@@ -2,7 +2,7 @@ import { makeStyles } from "@material-ui/core";
 import axios, { Axios } from "axios";
 import React, { useEffect, useState } from "react";
 import { CryptoTraderState } from "../../cryptoTrackerContext";
-import { TrendingCoins } from "../../config/api";
+import { CoinsData } from "../../config/api";
 import AliceCarousel, { Link } from "react-alice-carousel";
 
 const useStyles = makeStyles(() => ({
@@ -30,9 +30,9 @@ const CoinCarousel = () => {
   const [trendin, setTrendin] = useState([]);
   const { currency, symbol } = CryptoTraderState();
 
-  const fetchTrendingCoins = async () => {
+  const fetchCoinsData = async () => {
     try {
-      const { data } = await axios.get(TrendingCoins(currency));
+      const { data } = await axios.get(CoinsData(currency));
       setTrendin(data);
     } catch (error) {
       console.error("Failed to fetch trending coins data:", error);
@@ -42,7 +42,7 @@ const CoinCarousel = () => {
   console.log(trendin);
 
   useEffect(() => {
-    fetchTrendingCoins();
+    fetchCoinsData();
   }, [currency]);
 
   const items = trendin.flatMap((coin) => {

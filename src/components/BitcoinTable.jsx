@@ -1,7 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { CoinList } from "../config/api";
-import axios from "axios";
-import { CryptoTraderState } from "../cryptoTrackerContext";
 import {
   Container,
   LinearProgress,
@@ -19,6 +16,9 @@ import {
   makeStyles,
 } from "@material-ui/core";
 import { useNavigate } from "react-router-dom";
+import { CoinListTable } from "../config/api";
+import axios from "axios";
+import { CryptoTraderState } from "../cryptoTrackerContext";
 import { numberWithCommas } from "./Carousel/CoinCarousel";
 import { Pagination } from "@material-ui/lab";
 import { darkTheme } from "./Header";
@@ -44,6 +44,7 @@ const BitcoinTable = () => {
   const [loadin, setLoadin] = useState(false);
   const [searchBar, setSearchBar] = useState("");
   const [page, setPage] = useState(1);
+  const [error, setError] = useState(null); // State to manage error
   const { currency, symbol } = CryptoTraderState();
   const classes = useStyles();
   const navigate = useNavigate();
@@ -51,12 +52,14 @@ const BitcoinTable = () => {
   const fetchBitCoinData = async () => {
     try {
       setLoadin(true);
-      const { data } = await axios.get(CoinList(currency));
+      const { data } = await axios.get(CoinListTable(currency));
       setBitCoin(data);
       setLoadin(false);
+      setError(null); // Reset error state on success
     } catch (error) {
       console.error("Failed to fetch Bitcoin data:", error);
       setLoadin(false);
+      setError("Failed to fetch Bitcoin data. Please try again later."); // Set error message
     }
   };
 
@@ -71,6 +74,7 @@ const BitcoinTable = () => {
         bitCoin.symbol.toLowerCase().includes(searchBar)
     );
   };
+
   return (
     <ThemeProvider theme={darkTheme}>
       <Container style={{ textAlign: "center" }}>
@@ -96,6 +100,10 @@ const BitcoinTable = () => {
         <TableContainer component={Paper}>
           {loadin ? (
             <LinearProgress style={{ backgroundColor: "gold" }} />
+          ) : error ? (
+            <Typography variant="h6" color="error" style={{ padding: 10 }}>
+              {error}
+            </Typography>
           ) : (
             <Table aria-label="a dense table">
               <TableHead style={{ backgroundColor: "#EEBC1D" }}>

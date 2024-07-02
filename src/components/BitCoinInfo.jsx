@@ -1,8 +1,13 @@
-import { CircularProgress, ThemeProvider, makeStyles } from "@material-ui/core";
+import {
+  CircularProgress,
+  ThemeProvider,
+  makeStyles,
+  Typography,
+} from "@material-ui/core";
 import React, { useEffect, useState } from "react";
 import { CryptoTraderState } from "../cryptoTrackerContext";
 import axios from "axios";
-import { HistoricalChart } from "../config/api";
+import { HistoricalData } from "../config/api";
 import { darkTheme } from "./Header";
 import SelectGrapButton from "./SelectGrapButton";
 import * as echarts from "echarts";
@@ -46,24 +51,36 @@ const BitCoinInfo = ({ bitCoin }) => {
   const { currency } = CryptoTraderState();
   const [flag, setFlag] = useState(false);
   const classes = useStyles();
-  let chartInstance = null; // Variable to store the ECharts instance
+  const [retryCount, setRetryCount] = useState(0);
+  const [error, setError] = useState(null); // State to manage error
+  const maxRetries = 3;
+  let chartInstance = null;
 
   const fetchHPreviousDataPerBitCoin = async () => {
     try {
       const { data } = await axios.get(
-        HistoricalChart(bitCoin?.id, days, currency)
+        HistoricalData(bitCoin?.id, days, currency)
       );
       console.log(data);
       setFlag(true);
       setPreviousData(data.prices);
+      setRetryCount(0); // Reset retry count on success
+      setError(null); // Reset error state on success
     } catch (error) {
-      if (error.response.status === 429) {
-        // Implement a retry mechanism or wait before retrying
+      if (error?.response?.status === 429 && retryCount < maxRetries) {
+        // Implement a retry mechanism with a limit
         setTimeout(() => {
+          setRetryCount(retryCount + 1);
           fetchHPreviousDataPerBitCoin();
         }, 5000); // Retry after 5 seconds
       } else {
-        console.error("Failed to fetch historic data for Bitcoin:", error);
+        setFlag(true);
+        if (retryCount >= maxRetries) {
+          setError("Too many tries to API. Please try again later.");
+        } else {
+          setError("Failed to fetch historic data for Bitcoin.");
+          console.error("Failed to fetch historic data for Bitcoin:", error);
+        }
       }
     }
   };
@@ -118,12 +135,16 @@ const BitCoinInfo = ({ bitCoin }) => {
   return (
     <ThemeProvider theme={darkTheme}>
       <div className={classes.container}>
-        {!previousData || !flag ? (
+        {!previousData || (!flag && !error) ? (
           <CircularProgress
             style={{ color: "gold" }}
             size={250}
             thickness={1}
           />
+        ) : error ? (
+          <Typography variant="h6" color="error">
+            {error}
+          </Typography>
         ) : (
           <>
             <div id="chart" className={classes.chart}></div>
@@ -141,6 +162,7 @@ const BitCoinInfo = ({ bitCoin }) => {
                   onClick={() => {
                     setDays(day.value);
                     setFlag(false);
+                    setError(null); // Reset error state on changing time frame
                   }}
                   selected={day.value === days}
                 >
